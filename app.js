@@ -6,7 +6,7 @@ function load(){let d=null;try{d=JSON.parse(localStorage.getItem(KEY))}catch(e){
   if(!d||!d.lessons)d={lessons:JSON.parse(JSON.stringify(window.LESSONS_SEED)),updated:Date.now()};
   d.profiles=d.profiles||[];d.deleted=d.deleted||{};delete d.progress;return d}
 const CUR='english_cur';
-const P=()=>S.profiles.find(p=>p.id===localStorage.getItem(CUR));
+const P=()=>S.profiles.find(p=>p.id===sessionStorage.getItem(CUR));
 const EMOJIS=['🦁','🐯','🐼','🦊','🐸','🐵','🦄','🐙','🦋','🐢','🐬','🦉','🚀','⚽','🎸','🎨','🌟','🔥','🍕','🍓','👑','🤖','👻','🌈','🐶','🐱','🦖','🎮'];
 function save(){S.updated=Date.now();window.S=S;try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){alert('No se pudo guardar')}window.syncSoon&&syncSoon()}
 const esc=t=>String(t??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -19,12 +19,11 @@ function nav(h){location.hash=h}
 window.addEventListener('hashchange',route);
 $('#home').onclick=()=>nav('');
 $('#menu').onclick=()=>nav('#/ajustes');
-$('#who').onclick=()=>{sessionStorage.setItem('chg','1');localStorage.removeItem(CUR);nav('');route()};
+$('#who').onclick=()=>{sessionStorage.removeItem(CUR);nav('');route()};
 
 function route(){
   const [,p,id]=location.hash.split('/');
   const w=$('#who'),me=P();w.style.display=me?'':'none';if(me)w.textContent=me.emoji;
-  if(!me&&S.profiles.length===1&&p!=='perfil'&&!sessionStorage.getItem('chg')){localStorage.setItem(CUR,S.profiles[0].id);return route()}
   if(!me&&p!=='ajustes'&&p!=='perfil'){return pick()}
   $('#home').style.display=p?'':'none';
   ({undefined:home,'':home,leccion:lesson,quiz,tarjetas:cards,nueva:()=>edit(),editar:()=>edit(id),ajustes:settings,ia:ai,progreso:progress,repaso:()=>quiz(null,true),perfil:()=>profileForm(id)})[p||'']?.(id);
@@ -134,12 +133,12 @@ function wireConnect(){
   $('#cli').onclick=()=>go('login');$('#csu').onclick=()=>go('signup')}
 function pick(){
   $('#home').style.display='none';
-  app.innerHTML=`<h2 style="margin-top:0">¿Quién eres?</h2>${connectCard()}<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px">
+  app.innerHTML=`<h2 style="margin-top:0">¿Quién eres?</h2><div class="mut" id="syn" style="margin-bottom:10px">☁️ Cargando perfiles…</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px">
   ${S.profiles.map(p=>`<div class="card" data-p="${p.id}" style="text-align:center;cursor:pointer;margin:0"><div style="font-size:46px">${p.emoji}</div><b>${esc(p.name)}</b></div>`).join('')}
   <div class="card" id="np" style="text-align:center;cursor:pointer;margin:0"><div style="font-size:46px">➕</div><b>Nuevo</b></div></div>`;
-  document.querySelectorAll('[data-p]').forEach(e=>e.onclick=()=>{sessionStorage.removeItem('chg');localStorage.setItem(CUR,e.dataset.p);nav('');route()});
-  $('#np').onclick=()=>nav('#/perfil');wireConnect();
-  if(Sync.sess())Sync.run().then(r=>{if(r==='bajado'){S=window.S;if(!P())pick()}}).catch(()=>{});
+  document.querySelectorAll('[data-p]').forEach(e=>e.onclick=()=>{sessionStorage.setItem(CUR,e.dataset.p);nav('');route()});
+  $('#np').onclick=()=>nav('#/perfil');
+  Sync.run().then(r=>{if($('#syn'))$('#syn').textContent='';if(r==='bajado'){S=window.S;if(!P())pick()}}).catch(()=>{if($('#syn'))$('#syn').textContent='Sin conexión: mostrando los perfiles de este dispositivo.'});
 }
 function profileForm(id){
   const p=id?S.profiles.find(x=>x.id===id):{id:'p'+Date.now(),name:'',emoji:EMOJIS[Math.floor(Math.random()*EMOJIS.length)],progress:{},log:[]};
@@ -155,8 +154,8 @@ function profileForm(id){
   $('#ec').oninput=e=>{const v=[...e.target.value][0];if(v)set(v)};
   $('#cn').onclick=()=>history.back();
   $('#ok').onclick=()=>{const n=$('#pn').value.trim();if(!n)return alert('Escribe tu nombre');p.name=n;p.emoji=em;p.u=Date.now();
-   if(!S.profiles.find(x=>x.id===p.id))S.profiles.push(p);sessionStorage.removeItem('chg');localStorage.setItem(CUR,p.id);save();nav('')};
-  if(id)$('#rm').onclick=()=>{if(confirm('¿Eliminar este perfil y todo su avance?')){S.profiles=S.profiles.filter(x=>x.id!==id);S.deleted[id]=Date.now();localStorage.removeItem(CUR);save();nav('')}};
+   if(!S.profiles.find(x=>x.id===p.id))S.profiles.push(p);sessionStorage.setItem(CUR,p.id);save();nav('')};
+  if(id)$('#rm').onclick=()=>{if(confirm('¿Eliminar este perfil y todo su avance?')){S.profiles=S.profiles.filter(x=>x.id!==id);S.deleted[id]=Date.now();sessionStorage.removeItem(CUR);save();nav('')}};
 }
 function edit(id){
   const l=id?S.lessons.find(x=>x.id===id):{id:'l'+Date.now(),n:Math.max(0,...S.lessons.map(x=>x.n))+1,title:'',sub:'',obj:'',explain:'',vocab:[],examples:[],tips:[],quiz:[]};
@@ -201,19 +200,11 @@ function settings(){
   <p>Tus lecciones y progreso se guardan en este dispositivo y funcionan sin internet. Para pasarlos a otro dispositivo usa el archivo de respaldo (por AirDrop, correo o Drive).</p>
   <div class="row" style="flex-wrap:wrap"><button class="b" id="ex">Exportar respaldo</button><button class="b alt" id="im">Importar respaldo</button></div>
   <input type="file" id="fi" accept=".json" style="display:none"></div>
-  <div class="card"><b>Mi perfil</b> ${P()?P().emoji+' '+esc(P().name):''}<div class="row" style="margin-top:10px">${P()?`<button class="b alt" onclick="nav('#/perfil/${P().id}')">Editar</button>`:''}<button class="b alt" onclick="localStorage.removeItem(CUR);nav('');route()">Cambiar de perfil</button></div></div>
+  <div class="card"><b>Mi perfil</b> ${P()?P().emoji+' '+esc(P().name):''}<div class="row" style="margin-top:10px">${P()?`<button class="b alt" onclick="nav('#/perfil/${P().id}')">Editar</button>`:''}<button class="b alt" onclick="sessionStorage.removeItem(CUR);nav('');route()">Cambiar de perfil</button></div></div>
   <div class="card" id="acc"></div>
   <div class="card"><b>Reiniciar</b><p class="mut">Vuelve a las 12 lecciones iniciales y borra el progreso.</p><button class="b alt" id="rs" style="color:var(--bad);border-color:var(--bad)">Reiniciar todo</button></div>`;
-  const ss=Sync.sess(),acc=$('#acc');
-  if(ss){acc.innerHTML=`<b>Sincronizado</b> como ${esc(ss.email)}<div class="row" style="margin-top:10px"><button class="b" id="sn">Sincronizar ahora</button><button class="b alt" id="lo">Salir</button></div><div class="mut" id="sm"></div>`;
-   $('#sn').onclick=async()=>{$('#sm').textContent='Sincronizando…';try{const r=await Sync.run();S=window.S;$('#sm').textContent='Listo: '+r}catch(e){$('#sm').textContent=e.message}};
-   $('#lo').onclick=()=>{Sync.logout();settings()}}
-  else{acc.innerHTML=`<b>Sincronizar entre dispositivos</b><label>Correo</label><input id="em" type="email"><label>Contraseña (mín. 6)</label><input id="pw" type="password">
-   <div class="row" style="margin-top:10px"><button class="b" id="li">Entrar</button><button class="b alt" id="su">Crear cuenta</button></div><div class="mut" id="sm"></div>`;
-   const go=async f=>{try{$('#sm').textContent='…';const d=await Sync[f]($('#em').value.trim(),$('#pw').value);
-     if(f==='signup'&&!d.access_token){$('#sm').textContent='Revisa tu correo y confirma; luego pulsa Entrar.';return}
-     await Sync.run();S=window.S;settings()}catch(e){$('#sm').textContent=e.message}};
-   $('#li').onclick=()=>go('login');$('#su').onclick=()=>go('signup')}
+  $('#acc').innerHTML=`<b>Sincronización automática</b><p class="mut">Los perfiles y el avance se comparten solos entre todos los dispositivos.</p><button class="b" id="sn">Sincronizar ahora</button><div class="mut" id="sm"></div>`;
+  $('#sn').onclick=async()=>{$('#sm').textContent='Sincronizando…';try{const r=await Sync.run();S=window.S;$('#sm').textContent='Listo: '+r}catch(e){$('#sm').textContent=e.message}};
   $('#ex').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,1)],{type:'application/json'}));a.download='english-respaldo-'+new Date().toISOString().slice(0,10)+'.json';a.click()};
   $('#im').onclick=()=>$('#fi').click();
   $('#fi').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const d=JSON.parse(t);if(!d.lessons)throw 0;if(confirm('Esto se fusiona con lo que hay en este dispositivo. ¿Continuar?')){d.profiles=d.profiles||[];d.deleted=d.deleted||{};S=Sync.merge(S,d);save();nav('')}}catch(x){alert('Archivo no válido')}})};
@@ -221,5 +212,5 @@ function settings(){
 }
 window.onSyncDown=()=>{S=window.S;const h=location.hash;if(h===''||h==='#'||h.startsWith('#/progreso'))route()};
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
-Sync.run().then(r=>{if(r==='bajado'){S=window.S;route()}}).catch(()=>{});
 route();
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)Sync.run().then(r=>{if(r==='bajado')window.onSyncDown()}).catch(()=>{})});
