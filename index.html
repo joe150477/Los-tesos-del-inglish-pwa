@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>English Learning</title>
+<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icon.svg">
+<meta name="theme-color" content="#1B3A6B"><meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+:root{--bg:#f6f3ec;--card:#fff;--ink:#1d2433;--mut:#667;--pri:#1B3A6B;--acc:#F5C842;--ok:#2D8C4E;--bad:#C8292B;--line:#e4dfd2}
+@media(prefers-color-scheme:dark){:root{--bg:#12161f;--card:#1b2130;--ink:#eef0f5;--mut:#9aa3b5;--line:#2c3447;--pri:#7fa6e8}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,system-ui,sans-serif}
+header{position:sticky;top:0;background:var(--pri);color:#fff;padding:12px 16px;display:flex;gap:12px;align-items:center;z-index:5}
+@media(prefers-color-scheme:dark){header{background:#1B3A6B}}
+header h1{font-size:18px;margin:0;flex:1}header button{background:transparent;color:#fff;border:1px solid #fff6;border-radius:8px;padding:6px 10px}
+main{max-width:760px;margin:0 auto;padding:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:12px}
+.row{display:flex;gap:12px;align-items:center}.row .grow{flex:1}
+.num{width:38px;height:38px;border-radius:50%;background:var(--pri);color:#fff;display:grid;place-items:center;font-weight:700;flex:none}
+.tag{font-size:12px;padding:2px 8px;border-radius:99px;background:var(--line);color:var(--mut)}
+.tag.done{background:var(--ok);color:#fff}.tag.rev{background:var(--acc);color:#222}
+button.b{background:var(--pri);color:#fff;border:0;border-radius:10px;padding:10px 14px;font-size:15px;cursor:pointer}
+button.b.alt{background:transparent;color:var(--pri);border:1px solid var(--pri)}
+table{width:100%;border-collapse:collapse}td,th{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{font-size:12px;color:var(--mut)}
+td.p{color:var(--pri);font-weight:600}.mut{color:var(--mut)}
+.opt{display:block;width:100%;text-align:left;margin:6px 0;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:15px}
+.opt.ok{background:var(--ok);color:#fff}.opt.no{background:var(--bad);color:#fff}
+textarea,input{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font:inherit}
+textarea{min-height:110px}label{display:block;font-weight:600;margin:10px 0 4px}
+h2{margin:18px 0 8px}.flip{cursor:pointer;text-align:center;padding:36px 12px;font-size:24px}
+</style></head><body>
+<header><button id="home" style="display:none">‹ Inicio</button><h1>English Learning</h1><button id="who" style="display:none"></button><button id="menu">☰</button></header>
+<main id="app"></main>
+<script src="lessons.js"></script><script src="sync.js"></script><script src="app.js"></script>
+</body></html>
