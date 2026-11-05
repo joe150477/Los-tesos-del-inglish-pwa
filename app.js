@@ -19,11 +19,12 @@ function nav(h){location.hash=h}
 window.addEventListener('hashchange',route);
 $('#home').onclick=()=>nav('');
 $('#menu').onclick=()=>nav('#/ajustes');
-$('#who').onclick=()=>{localStorage.removeItem(CUR);nav('');route()};
+$('#who').onclick=()=>{sessionStorage.setItem('chg','1');localStorage.removeItem(CUR);nav('');route()};
 
 function route(){
   const [,p,id]=location.hash.split('/');
   const w=$('#who'),me=P();w.style.display=me?'':'none';if(me)w.textContent=me.emoji;
+  if(!me&&S.profiles.length===1&&p!=='perfil'&&!sessionStorage.getItem('chg')){localStorage.setItem(CUR,S.profiles[0].id);return route()}
   if(!me&&p!=='ajustes'&&p!=='perfil'){return pick()}
   $('#home').style.display=p?'':'none';
   ({undefined:home,'':home,leccion:lesson,quiz,tarjetas:cards,nueva:()=>edit(),editar:()=>edit(id),ajustes:settings,ia:ai,progreso:progress,repaso:()=>quiz(null,true),perfil:()=>profileForm(id)})[p||'']?.(id);
@@ -122,9 +123,9 @@ Datos: ${JSON.stringify(A.map(a=>({leccion:a.l.title,acierto_reciente:a.acc,dias
 }
 function connectCard(){
   return Sync.sess()?`<div class="mut" style="margin-bottom:10px">☁️ Conectado como ${esc(Sync.sess().email)} · <a href="#/ajustes">ajustes</a></div>`:
-  `<div class="card"><b>☁️ Conecta este dispositivo (una sola vez)</b><div class="mut">Así aparecen los perfiles de todos y el avance se guarda. Usa el correo y la contraseña del grupo.</div>
+  `<details class="card"><summary><b>☁️ Usar mi perfil en otro dispositivo</b></summary><div class="mut">Opcional: conecta una cuenta para que tu avance viaje contigo entre tus dispositivos.</div>
   <label>Correo</label><input id="cem" type="email"><label>Contraseña</label><input id="cpw" type="password">
-  <div class="row" style="margin-top:10px"><button class="b" id="cli">Entrar</button><button class="b alt" id="csu">Crear cuenta del grupo</button></div><div class="mut" id="cmsg"></div></div>`}
+  <div class="row" style="margin-top:10px"><button class="b" id="cli">Entrar</button><button class="b alt" id="csu">Crear cuenta</button></div><div class="mut" id="cmsg"></div></details>`}
 function wireConnect(){
   if(!$('#cli'))return;
   const go=async f=>{try{$('#cmsg').textContent='…';const d=await Sync[f]($('#cem').value.trim(),$('#cpw').value);
@@ -136,7 +137,7 @@ function pick(){
   app.innerHTML=`<h2 style="margin-top:0">¿Quién eres?</h2>${connectCard()}<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px">
   ${S.profiles.map(p=>`<div class="card" data-p="${p.id}" style="text-align:center;cursor:pointer;margin:0"><div style="font-size:46px">${p.emoji}</div><b>${esc(p.name)}</b></div>`).join('')}
   <div class="card" id="np" style="text-align:center;cursor:pointer;margin:0"><div style="font-size:46px">➕</div><b>Nuevo</b></div></div>`;
-  document.querySelectorAll('[data-p]').forEach(e=>e.onclick=()=>{localStorage.setItem(CUR,e.dataset.p);nav('');route()});
+  document.querySelectorAll('[data-p]').forEach(e=>e.onclick=()=>{sessionStorage.removeItem('chg');localStorage.setItem(CUR,e.dataset.p);nav('');route()});
   $('#np').onclick=()=>nav('#/perfil');wireConnect();
   if(Sync.sess())Sync.run().then(r=>{if(r==='bajado'){S=window.S;if(!P())pick()}}).catch(()=>{});
 }
@@ -154,7 +155,7 @@ function profileForm(id){
   $('#ec').oninput=e=>{const v=[...e.target.value][0];if(v)set(v)};
   $('#cn').onclick=()=>history.back();
   $('#ok').onclick=()=>{const n=$('#pn').value.trim();if(!n)return alert('Escribe tu nombre');p.name=n;p.emoji=em;p.u=Date.now();
-   if(!S.profiles.find(x=>x.id===p.id))S.profiles.push(p);localStorage.setItem(CUR,p.id);save();nav('')};
+   if(!S.profiles.find(x=>x.id===p.id))S.profiles.push(p);sessionStorage.removeItem('chg');localStorage.setItem(CUR,p.id);save();nav('')};
   if(id)$('#rm').onclick=()=>{if(confirm('¿Eliminar este perfil y todo su avance?')){S.profiles=S.profiles.filter(x=>x.id!==id);S.deleted[id]=Date.now();localStorage.removeItem(CUR);save();nav('')}};
 }
 function edit(id){
