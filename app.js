@@ -22,6 +22,7 @@ $('#menu').onclick=()=>nav('#/ajustes');
 $('#who').onclick=()=>{sessionStorage.removeItem(CUR);nav('');route()};
 
 function route(){
+  if(window.Clase&&Clase.isOn&&!location.hash.startsWith('#/leccion'))Clase.stop();
   const [,p,id]=location.hash.split('/');
   const w=$('#who'),me=P();w.style.display=me?'':'none';if(me)w.textContent=me.emoji;
   if(!me&&p!=='ajustes'&&p!=='perfil'){return pick()}
@@ -42,7 +43,7 @@ function lesson(id){
   const l=S.lessons.find(x=>x.id===id);if(!l)return nav('');
   if(st(id).status==='pending'){setSt(id,{status:'studying'});save()}
   const v=l.vocab||[];
-  app.innerHTML=`<h2 style="margin-top:0">${l.n}. ${esc(l.title)}</h2><div class="mut">${esc(l.sub)}</div>
+  app.innerHTML=`<h2 style="margin-top:0"><button class="b" style="padding:2px 12px;font-size:22px;vertical-align:middle;margin-right:6px" onclick="Clase.play(S.lessons.find(x=>x.id==='${l.id}'))" title="Escuchar la clase">🔊</button>${l.n}. ${esc(l.title)}</h2><div class="mut">${esc(l.sub)}</div>
   <div class="card"><b>Objetivo:</b> ${esc(l.obj)}</div>
   <div class="card">${esc(l.explain).replace(/\n/g,'<br>')}</div>
   ${v.length?`<div class="card"><table><tr><th>Inglés</th><th>Pronunciación</th><th>Significado</th></tr>${v.map(r=>`<tr><td><b>${esc(r[0])}</b> <button class="b alt" style="padding:0 6px" onclick="say('${esc(r[0]).replace(/'/g,"\\'")}')">🔊</button></td><td class="p">${esc(r[1])}</td><td>${esc(r[2])}</td></tr>`).join('')}</table></div>`:''}
