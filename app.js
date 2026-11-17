@@ -51,7 +51,8 @@ function lesson(id){
   <div class="row" style="flex-wrap:wrap"><button class="b" onclick="nav('#/quiz/${id}')">Practicar</button><button class="b alt" onclick="nav('#/tarjetas/${id}')">Tarjetas</button>
   <button class="b alt" onclick="nav('#/editar/${id}')">Editar</button></div>`;
 }
-window.say=t=>{try{const u=new SpeechSynthesisUtterance(t.split('→')[0].split('=')[0]);u.lang='en-US';u.rate=.85;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}};
+const LETRAS={A:'ay',B:'bee',C:'see',D:'dee',E:'ee',F:'eff',G:'gee',H:'aitch',I:'eye',J:'jay',K:'kay',L:'el',M:'em',N:'en',O:'oh',P:'pee',Q:'cue',R:'ar',S:'ess',T:'tee',U:'you',V:'vee',W:'double you',X:'ex',Y:'why',Z:'zee'};
+window.say=t=>{try{let x=t.split('→')[0].split('=')[0].trim();if(/^[A-Za-z]$/.test(x))x=LETRAS[x.toUpperCase()];const u=new SpeechSynthesisUtterance(x);u.lang='en-US';u.rate=.85;speechSynthesis.cancel();speechSynthesis.speak(u)}catch(e){}};
 
 function cards(id){
   const l=S.lessons.find(x=>x.id===id);const v=(l.vocab||[]).filter(r=>r[0]);let i=0,show=false;
@@ -148,16 +149,35 @@ function profileForm(id){
   <label>Nombre</label><input id="pn" value="${esc(p.name)}">
   <label>Elige tu emoji (o escribe el tuyo)</label><div id="eg" style="display:flex;flex-wrap:wrap;gap:6px">${EMOJIS.map(e=>`<button class="opt" style="width:48px;margin:0;text-align:center;font-size:24px;padding:4px">${e}</button>`).join('')}</div>
   <input id="ec" placeholder="Otro emoji" style="margin-top:8px;width:120px">
-  <div class="row" style="margin-top:14px"><button class="b" id="ok">Guardar</button>${id?'<button class="b alt" id="rm" style="color:var(--bad);border-color:var(--bad)">Eliminar</button>':''}<button class="b alt" id="cn">Cancelar</button></div></div>`;
+  <div class="row" style="margin-top:14px"><button class="b" id="ok">Guardar</button><button class="b alt" id="cn">Cancelar</button></div></div>`;
   const set=e=>{em=e;$('#big').textContent=e};
   document.querySelectorAll('#eg .opt').forEach(b=>b.onclick=()=>set(b.textContent));
   $('#ec').oninput=e=>{const v=[...e.target.value][0];if(v)set(v)};
   $('#cn').onclick=()=>history.back();
   $('#ok').onclick=()=>{const n=$('#pn').value.trim();if(!n)return alert('Escribe tu nombre');p.name=n;p.emoji=em;p.u=Date.now();
    if(!S.profiles.find(x=>x.id===p.id))S.profiles.push(p);sessionStorage.setItem(CUR,p.id);save();nav('')};
-  if(id)$('#rm').onclick=()=>{if(confirm('¿Eliminar este perfil y todo su avance?')){S.profiles=S.profiles.filter(x=>x.id!==id);S.deleted[id]=Date.now();sessionStorage.removeItem(CUR);save();nav('')}};
+}
+function editAdd(l){
+  const li=a=>(a||[]).map(e=>`<div>• ${esc(e)}</div>`).join('')||'<div class="mut">—</div>';
+  app.innerHTML=`<h2 style="margin-top:0">Agregar a: ${esc(l.title)}</h2>
+  <div class="mut" style="margin-bottom:10px">Aquí solo se puede agregar. Lo que ya existe no se borra ni se cambia.</div>
+  <div class="card"><b>Ya existe</b><div class="mut">${esc(l.vocab.length)} vocabulario · ${(l.examples||[]).length} ejemplos · ${(l.tips||[]).length} trucos · ${(l.quiz||[]).length} ejercicios</div></div>
+  <div class="card">
+  <label>Agregar a la explicación</label><textarea id="e" placeholder="Texto nuevo que se añade al final"></textarea>
+  <label>Vocabulario nuevo (uno por línea: inglés | pronunciación | español)</label><textarea id="v"></textarea>
+  <label>Ejemplos nuevos (uno por línea)</label><textarea id="x"></textarea>
+  <label>Trucos nuevos (uno por línea)</label><textarea id="p"></textarea>
+  <label>Ejercicios nuevos (pregunta | opción1 / opción2 / opción3 | número de la correcta)</label><textarea id="q"></textarea>
+  <div class="row" style="margin-top:12px"><button class="b" id="sv">Agregar</button><button class="b alt" onclick="history.back()">Cancelar</button></div></div>`;
+  $('#sv').onclick=()=>{const lines=t=>$(t).value.split('\n').map(s=>s.trim()).filter(Boolean);
+   const ex=$('#e').value.trim(),v=lines('#v').map(s=>{const a=s.split('|').map(z=>z.trim());return [a[0]||'',a[1]||'',a[2]||'']}),
+    x=lines('#x'),p=lines('#p'),q=lines('#q').map(s=>{const a=s.split('|').map(z=>z.trim());return [a[0],(a[1]||'').split('/').map(z=>z.trim()),Math.max(0,(+a[2]||1)-1)]});
+   if(!ex&&!v.length&&!x.length&&!p.length&&!q.length)return alert('No escribiste nada para agregar');
+   l.explain=ex?(l.explain?l.explain+'\n\n':'')+ex:l.explain;l.vocab=[...(l.vocab||[]),...v];l.examples=[...(l.examples||[]),...x];l.tips=[...(l.tips||[]),...p];l.quiz=[...(l.quiz||[]),...q];
+   l.u=Date.now();save();nav('#/leccion/'+l.id)};
 }
 function edit(id){
+  if(id){const L=S.lessons.find(x=>x.id===id);if(L)return editAdd(L)}
   const l=id?S.lessons.find(x=>x.id===id):{id:'l'+Date.now(),n:Math.max(0,...S.lessons.map(x=>x.n))+1,title:'',sub:'',obj:'',explain:'',vocab:[],examples:[],tips:[],quiz:[]};
   const vt=(l.vocab||[]).map(r=>r.join(' | ')).join('\n');
   const qt=(l.quiz||[]).map(q=>`${q[0]} | ${q[1].join(' / ')} | ${q[2]+1}`).join('\n');
@@ -169,7 +189,7 @@ function edit(id){
   <label>Ejemplos (uno por línea)</label><textarea id="x">${esc((l.examples||[]).join('\n'))}</textarea>
   <label>Trucos (uno por línea)</label><textarea id="p">${esc((l.tips||[]).join('\n'))}</textarea>
   <label>Ejercicios (pregunta | opción1 / opción2 / opción3 | número de la correcta)</label><textarea id="q">${esc(qt)}</textarea>
-  <div class="row" style="margin-top:12px"><button class="b" id="sv">Guardar</button>${id?'<button class="b alt" id="dl" style="color:var(--bad);border-color:var(--bad)">Eliminar</button>':''}</div></div>`;
+  <div class="row" style="margin-top:12px"><button class="b" id="sv">Guardar</button>${id?'':''}</div></div>`;
   $('#sv').onclick=()=>{const lines=t=>$(t).value.split('\n').map(s=>s.trim()).filter(Boolean);
    const nl={u:Date.now(),id:l.id,n:+$('#n').value||1,title:$('#t').value,sub:$('#s').value,obj:$('#o').value,explain:$('#e').value,
     vocab:lines('#v').map(s=>{const a=s.split('|').map(z=>z.trim());return [a[0]||'',a[1]||'',a[2]||'']}),
@@ -177,7 +197,6 @@ function edit(id){
     quiz:lines('#q').map(s=>{const a=s.split('|').map(z=>z.trim());return [a[0],(a[1]||'').split('/').map(z=>z.trim()),Math.max(0,(+a[2]||1)-1)]})};
    if(!nl.title)return alert('Falta el título');
    const k=S.lessons.findIndex(x=>x.id===l.id);k>=0?S.lessons[k]=nl:S.lessons.push(nl);save();nav('#/leccion/'+l.id)};
-  if(id)$('#dl').onclick=()=>{if(confirm('¿Eliminar esta lección?')){S.lessons=S.lessons.filter(x=>x.id!==id);S.deleted[id]=Date.now();save();nav('')}};
 }
 function ai(){
   app.innerHTML=`<h2 style="margin-top:0">Lección desde mis apuntes</h2><div class="card">
@@ -202,13 +221,12 @@ function settings(){
   <input type="file" id="fi" accept=".json" style="display:none"></div>
   <div class="card"><b>Mi perfil</b> ${P()?P().emoji+' '+esc(P().name):''}<div class="row" style="margin-top:10px">${P()?`<button class="b alt" onclick="nav('#/perfil/${P().id}')">Editar</button>`:''}<button class="b alt" onclick="sessionStorage.removeItem(CUR);nav('');route()">Cambiar de perfil</button></div></div>
   <div class="card" id="acc"></div>
-  <div class="card"><b>Reiniciar</b><p class="mut">Vuelve a las 12 lecciones iniciales y borra el progreso.</p><button class="b alt" id="rs" style="color:var(--bad);border-color:var(--bad)">Reiniciar todo</button></div>`;
+  `;
   $('#acc').innerHTML=`<b>Sincronización automática</b><p class="mut">Los perfiles y el avance se comparten solos entre todos los dispositivos.</p><button class="b" id="sn">Sincronizar ahora</button><div class="mut" id="sm"></div>`;
   $('#sn').onclick=async()=>{$('#sm').textContent='Sincronizando…';try{const r=await Sync.run();S=window.S;$('#sm').textContent='Listo: '+r}catch(e){$('#sm').textContent=e.message}};
   $('#ex').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,1)],{type:'application/json'}));a.download='english-respaldo-'+new Date().toISOString().slice(0,10)+'.json';a.click()};
   $('#im').onclick=()=>$('#fi').click();
   $('#fi').onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(t=>{try{const d=JSON.parse(t);if(!d.lessons)throw 0;if(confirm('Esto se fusiona con lo que hay en este dispositivo. ¿Continuar?')){d.profiles=d.profiles||[];d.deleted=d.deleted||{};S=Sync.merge(S,d);save();nav('')}}catch(x){alert('Archivo no válido')}})};
-  $('#rs').onclick=()=>{if(confirm('¿Borrar todo y reiniciar?')){localStorage.removeItem(KEY);S=load();window.S=S;nav('')}};
 }
 window.onSyncDown=()=>{S=window.S;const h=location.hash;if(h===''||h==='#'||h.startsWith('#/progreso'))route()};
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
